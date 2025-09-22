@@ -3,8 +3,8 @@ const request = require('supertest');
 const app = require('../app');
 const model = require('../models/books');
 
-beforeEach(() => {
-  model.resetData();
+beforeEach(async () => {
+  await model.resetData(); // ahora espera a que se reinicie la BD
 });
 
 describe('Books API', () => {
@@ -12,7 +12,6 @@ describe('Books API', () => {
     const res = await request(app).get('/api/books');
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
-    // shape mínima
     if (res.body.length) {
       expect(res.body[0]).toHaveProperty('id');
       expect(res.body[0]).toHaveProperty('title');
@@ -29,7 +28,7 @@ describe('Books API', () => {
     expect(res.body.title).toBe(payload.title);
     expect(res.body.author).toBe(payload.author);
     expect(res.body).toHaveProperty('id');
-    expect(res.body).toHaveProperty('isRead', false); // por defecto
+    expect(res.body).toHaveProperty('isRead', false);
     expect(typeof res.body.createdAt).toBe('string');
   });
 
@@ -54,7 +53,7 @@ describe('Books API', () => {
     expect(res.body.title).toBe('A2');
     expect(res.body.author).toBe('B2');
     expect(res.body.isRead).toBe(true);
-    expect(res.body.id).toBe(c.body.id); // id inmutable
+    expect(res.body.id).toBe(c.body.id);
   });
 
   test('PUT /api/books/:id -> 404 si no existe', async () => {
@@ -64,10 +63,9 @@ describe('Books API', () => {
     expect(res.status).toBe(404);
   });
 
-  // --- PATCH /read: Caso A (sin body) => toggle
   test('PATCH /api/books/:id/read -> toggle sin body', async () => {
     const c = await request(app).post('/api/books').send({ title: 'T', author: 'U' });
-    // valor inicial (por defecto false)
+
     const first = await request(app).get(`/api/books/${c.body.id}`);
     expect(first.body.isRead).toBe(false);
 
@@ -75,13 +73,11 @@ describe('Books API', () => {
     expect(res.status).toBe(200);
     expect(res.body.isRead).toBe(true);
 
-    // toggle otra vez sin body
     const res2 = await request(app).patch(`/api/books/${c.body.id}/read`).send();
     expect(res2.status).toBe(200);
     expect(res2.body.isRead).toBe(false);
   });
 
-  // --- PATCH /read: Caso B (con body) => set explícito
   test('PATCH /api/books/:id/read -> set explícito con body', async () => {
     const c = await request(app).post('/api/books').send({ title: 'T', author: 'U' });
 
@@ -108,7 +104,6 @@ describe('Books API', () => {
     const res = await request(app).delete(`/api/books/${c.body.id}`);
     expect(res.status).toBe(204);
 
-    // confirmar que ya no existe
     const getAgain = await request(app).get(`/api/books/${c.body.id}`);
     expect(getAgain.status).toBe(404);
   });

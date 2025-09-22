@@ -1,49 +1,72 @@
 // models/books.js
-const initialBooks = [
-  {
-    id: "1",
-    title: "Don Quijote",
-    author: "Miguel de Cervantes",
-    isRead: false,
-    createdAt: "2024-01-22T10:00:00Z"
+const db = require('../database');
+
+// Obtener todos los libros con filtros opcionales
+function findAll(filters = {}, callback) {
+  let sql = 'SELECT * FROM books';
+  const params = [];
+
+  if (filters.author || filters.title) {
+    sql += ' WHERE';
+    const conditions = [];
+    if (filters.author) {
+      conditions.push(' author LIKE ? ');
+      params.push(`%${filters.author}%`);
+    }
+    if (filters.title) {
+      conditions.push(' title LIKE ? ');
+      params.push(`%${filters.title}%`);
+    }
+    sql += conditions.join(' AND ');
   }
-];
 
-let books = initialBooks.map(b => ({ ...b }));
-
-function findAll(filters = {}) {
-  let results = books;
-  const { author, title } = filters;
-  if (author) results = results.filter(b => b.author.toLowerCase().includes(author.toLowerCase()));
-  if (title) results = results.filter(b => b.title.toLowerCase().includes(title.toLowerCase()));
-  return results;
+  db.all(sql, params, (err, rows) => {
+    if (err) return callback(err);
+    callback(null, rows);
+  });
 }
 
-function findById(id) {
-    return books.find(b => String(b.id) === String(id)) || null;
+// Buscar libro por ID
+function findById(id, callback) {
+  db.get('SELECT * FROM books WHERE id = ?', [id], (err, row) => {
+    if (err) return callback(err);
+    callback(null, row || null);
+  });
 }
 
-function add(book) {
-  books.push(book);
-  return book;
+// Agregar libro
+function add(book, callback) {
+  const { id, title, author, isRead, createdAt } = book;
+  db.run(
+    'INSERT INTO books (id, title, author, isRead, createdAt) VALUES (?, ?, ?, ?, ?)',
+    [id, title, author, isRead ? 1 : 0, createdAt],
+    function (err) {
+      if (err) return callback(err);
+      callback(null, book); // <- devuelves el objeto tal cual se insertó
+    }
+  );
 }
 
-function update(id, data) {
-  const idx = books.findIndex(b => b.id === id);
-  if (idx === -1) return null;
-  books[idx] = { ...books[idx], ...data };
-  return books[idx];
+// Actualizar libro
+function update(id, data, callback) {
+  const { title, author, isRead } = data;
+  db.run(
+    'UPDATE books SET title = ?, author = ?, isRead = ? WHERE id = ?',
+    [title, author, isRead ? 1 : 0, id],
+    function (err) {
+      if (err) return callback(err);
+      if (this.changes === 0) return callback(null, null);
+      findById(id, callback);
+    }
+  );
 }
 
-function remove(id) {
-  const idx = books.findIndex(b => b.id === id);
-  if (idx === -1) return false;
-  books.splice(idx, 1);
-  return true;
-}
-
-function resetData() {
-  books = initialBooks.map(b => ({ ...b }));
+// Eliminar libro
+function remove(id, callback) {
+  db.run('DELETE FROM books WHERE id = ?', [id], function (err) {
+    if (err) return callback(err);
+    callback(null, this.changes > 0);
+  });
 }
 
 module.exports = {
@@ -51,6 +74,5 @@ module.exports = {
   getBookById: findById,
   addBook: add,
   updateBook: update,
-  deleteBook: remove,
-  resetData
+  deleteBook: remove
 };
