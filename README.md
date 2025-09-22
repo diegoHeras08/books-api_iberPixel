@@ -82,10 +82,17 @@ Invoke-WebRequest -Uri http://localhost:3000/api/books -Method POST `
 ## Estructura
 
 app.js          # Configuración Express
+
 server.js       # Arranque servidor
+
 database.js     # Conexión SQLite
+
 routes/         # Rutas API
+
 controllers/    # Lógica de negocio
+
 models/         # Acceso BD
+
 tests/          # Pruebas Jest
+
 
