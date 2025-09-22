@@ -76,13 +76,13 @@ function toggleRead(req, res) {
     if (err) return res.status(500).json({ error: 'Error al buscar el libro' });
     if (!book) return res.status(404).json({ message: 'Libro no encontrado' });
 
-    const newValue = (req.body && typeof req.body.isRead === 'boolean')
+    const newValue = typeof req.body.isRead === 'boolean'
       ? req.body.isRead
       : !book.isRead;
 
-    model.updateBook(req.params.id, { isRead: newValue }, (err, updated) => {
+    model.updateIsRead(req.params.id, newValue, (err, updatedBook) => {
       if (err) return res.status(500).json({ error: 'Error al actualizar el libro' });
-      res.json(updated);
+      res.json(updatedBook);
     });
   });
 }

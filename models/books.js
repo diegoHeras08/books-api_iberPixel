@@ -61,6 +61,18 @@ function update(id, data, callback) {
   );
 }
 
+function updateIsRead(id, isRead, callback) {
+  db.run(
+    'UPDATE books SET isRead = ? WHERE id = ?',
+    [isRead ? 1 : 0, id],
+    function (err) {
+      if (err) return callback(err);
+      if (this.changes === 0) return callback(null, null);
+      findById(id, callback);
+    }
+  );
+}
+
 // Eliminar libro
 function remove(id, callback) {
   db.run('DELETE FROM books WHERE id = ?', [id], function (err) {
@@ -74,5 +86,6 @@ module.exports = {
   getBookById: findById,
   addBook: add,
   updateBook: update,
-  deleteBook: remove
+  deleteBook: remove,
+  updateIsRead
 };
